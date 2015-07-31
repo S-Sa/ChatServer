@@ -8,7 +8,7 @@ class ChatClientHandler extends Thread{
     BufferedWriter out;
     private List<ChatClientHandler> clients = new ArrayList<ChatClientHandler>(); //追加するオブジェクトの型をあらかじめ宣言しておく
     private String name; //自分自身の名前
-    
+    private List<ChatClientHandler> rejects = new ArrayList<ChatClientHandler>();
     public void run(){
 	try{
 	    open();
@@ -25,6 +25,8 @@ class ChatClientHandler extends Thread{
 		    changeName(commands[1]);
 		}else if(commands[0].equalsIgnoreCase("user")){ //userと入力された場合
 		    allclients();
+		}else if(commands[0].equalsIgnoreCase("reject")){ //nameと入力された場合
+		    rejects(commands[1]);
 		}
 		if(message.equals("bye")){ //byeと入力された場合
 		    break;
@@ -61,6 +63,7 @@ class ChatClientHandler extends Thread{
 	send("name message : クライアントの名前をmessageに変えます。");
 	send("bye : このチャットサーバから退出し、終了します。");
 	send("whoami : 自分の名前を確認できます。");
+    send("reject : 指定した人のメッセージを受け取らないようにしまします。");
     }
 
 
@@ -77,6 +80,36 @@ class ChatClientHandler extends Thread{
 	    }
 	}
 	this.name = name; //このクライアントの名前を変更する
+    }
+
+    /*
+      rejectします
+    */
+    public void rejects(String rejname)throws IOException{
+        for(int i=0;i<clients.size();i++){
+            for(int j = 0;j < rejects.size();j++){
+                ChatClientHandler gatti = (ChatClientHandler)rejects.get(i);
+                if(gatti.name.equals(rejname)){
+                    rejects.remove(gatti);
+                    send(rejname + "のrejectを削除しました");
+                    return ;
+                }
+            }
+            ChatClientHandler handler = (ChatClientHandler)clients.get(i);
+            if(handler.name.equals(rejname)){
+                rejects.add(handler);
+                send(rejname + "をrejectしました");
+                send("現在rejectした人の一覧です");
+                for(int k = 0;k < rejects.size();k++){
+                    ChatClientHandler rejuser = (ChatClientHandler)rejects.get(k);
+                    out.write(rejuser.getClientName());
+                    out.write(",");
+                }
+                send("");
+                return ;
+            }
+        }
+        send("指定された名前は存在しません");
     }
 
 
@@ -112,12 +145,21 @@ class ChatClientHandler extends Thread{
      */
     public void post(String message)throws IOException{
 	List<String> names = new ArrayList<String>(); //Stringで格納するListを用意
+    int flag = 0; //reject用
 	for(int i = 0;i < clients.size();i++){
+        flag = 0;
 	    ChatClientHandler handler = (ChatClientHandler)clients.get(i);
-	    if(handler != this){ //取得したhandlerが自分自身でない場合
-		names.add(handler.getClientName());  //自分の名前を追加
-		handler.send("["+ this.getClientName() + "]" + message); //自分の名前のヘッダーをつけてメッセージを発信
-	    }
+        for(int j = 0;j < handler.rejects.size();j++){
+            ChatClientHandler rejecter = (ChatClientHandler)handler.rejects.get(j);
+            if(this == rejecter){
+                flag = 1;
+            }
+            System.out.println(flag);
+        }
+        if((handler != this) && (flag == 0)){ //取得したhandlerが自分自身でない場合
+            names.add(handler.getClientName());  //自分の名前を追加
+            handler.send("["+ this.getClientName() + "]" + message); //自分の名前のヘッダーをつけてメッセージを発信
+        }
 	}
 	Collections.sort(names); //名前をソート
 	String returnMessage = "";
