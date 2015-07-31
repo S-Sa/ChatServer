@@ -25,7 +25,7 @@ class ChatClientHandler extends Thread{
 		    changeName(commands[1]);
 		}else if(commands[0].equalsIgnoreCase("user")){ //userと入力された場合
 		    allclients();
-		}else if(commands[0].equalsIgnoreCase("reject")){ //nameと入力された場合
+		}else if(commands[0].equalsIgnoreCase("reject")){ //rejectと入力された場合
 		    rejects(commands[1]);
 		}
 		if(message.equals("bye")){ //byeと入力された場合
